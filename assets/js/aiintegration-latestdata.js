@@ -1,6 +1,8 @@
 (function() {
 	'use strict';
 
+	let observersStarted = false;
+
 	function waitForCore(callback) {
 		if (typeof window.AIIntegrationCore !== 'undefined') {
 			callback();
@@ -10,17 +12,28 @@
 		}
 	}
 
+	function getLatestDataTable() {
+		const form = document.querySelector('form[name="items"]');
+		if (form) {
+			const table = form.querySelector('table.list-table');
+			if (table) return table;
+		}
+		return document.querySelector('table.list-table');
+	}
+
 	function isLatestDataPage() {
-		return window.location.href.includes('action=latest.view') ||
+		if (window.location.href.includes('action=latest.view') ||
 			window.location.href.includes('latest.php') ||
-			document.querySelector('.latest-data-page') !== null;
+			document.querySelector('.latest-data-page') !== null) {
+			return true;
+		}
+		if (getLatestDataTable() !== null) {
+			return true;
+		}
+		return false;
 	}
 
 	function init() {
-		if (!isLatestDataPage()) {
-			return;
-		}
-
 		waitForCore(() => {
 			const core = window.AIIntegrationCore;
 			core.loadSettings().then((settings) => {
@@ -28,12 +41,23 @@
 					return;
 				}
 				initLatestDataButtons(settings);
+				startPoller(settings);
 			});
 		});
 	}
 
+	function startPoller(settings) {
+		setInterval(() => {
+			const table = getLatestDataTable();
+			if (!table) return;
+			if (!table.closest('form[name="items"]')) return;
+			addHeaderColumn(table);
+			addButtonsToRows(table, settings);
+		}, 800);
+	}
+
 	function initLatestDataButtons(settings) {
-		const table = document.querySelector('table.list-table');
+		const table = getLatestDataTable();
 		if (!table) {
 			setTimeout(() => initLatestDataButtons(settings), 500);
 			return;
@@ -41,8 +65,11 @@
 
 		addHeaderColumn(table);
 		addButtonsToRows(table, settings);
-		observeTableChanges(settings);
-		observePageRefresh(settings);
+		if (!observersStarted) {
+			observersStarted = true;
+			observeTableChanges(settings);
+			observePageRefresh(settings);
+		}
 	}
 
 	function getSparkleIcon(size) {
@@ -149,16 +176,23 @@
 
 			const checkbox = row.querySelector('input[type="checkbox"][name*="itemids"]');
 			if (checkbox) {
-				data.itemid = checkbox.value;
+				data.itemid = checkbox.value || '';
+				if (!data.itemid && checkbox.name) {
+					const m = checkbox.name.match(/itemids\[(\d+)\]/);
+					if (m) data.itemid = m[1];
+				}
+			}
+
+			const itemNameEl = row.querySelector('.list-table-actions a, .action-container a, [class*="action"] a, td a');
+			if (itemNameEl && itemNameEl.textContent) {
+				data.name = data.name || itemNameEl.textContent.trim();
 			}
 
 			const itemLink = row.querySelector('a[href*="itemid"]');
 			if (itemLink) {
-				const match = itemLink.href.match(/itemid[s]?=(\d+)/);
-				if (match) {
-					data.itemid = match[1];
-				}
-				data.name = itemLink.textContent.trim();
+				const match = itemLink.href.match(/itemid[s]?[=\[\]]*(\d+)/);
+				if (match) data.itemid = data.itemid || match[1];
+				if (itemLink.textContent) data.name = itemLink.textContent.trim();
 			}
 
 			const hostLink = row.querySelector('a[href*="hostid"]');
@@ -200,12 +234,12 @@
 
 		const observer = new MutationObserver(() => {
 			setTimeout(() => {
-				const table = document.querySelector('table.list-table');
-				if (table) {
+				const table = getLatestDataTable();
+				if (table && table.closest('form[name="items"]')) {
 					addHeaderColumn(table);
 					addButtonsToRows(table, settings);
 				}
-			}, 100);
+			}, 150);
 		});
 
 		observer.observe(container, {
@@ -216,8 +250,8 @@
 
 	function observePageRefresh(settings) {
 		setInterval(() => {
-			const table = document.querySelector('table.list-table');
-			if (!table) return;
+			const table = getLatestDataTable();
+			if (!table || !table.closest('form[name="items"]')) return;
 
 			const thead = table.querySelector('thead');
 			if (thead && !thead.classList.contains('aiintegration-header-added')) {
