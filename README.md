@@ -25,10 +25,10 @@ Zabbix frontend module that adds AI-powered analysis and quick actions across mo
 
 - **Database-Driven**: All configuration is stored securely in the Zabbix database (`profiles` table). No external configuration files or writable directories are required.
 - **Strong Encryption**: Sensitive data like API Keys are encrypted using **AES-256-GCM**.
-- **Robust Master Key Management**: The encryption system uses a multi-layered fallback for the Master Key:
-  1. Environment Variable: `ZBX_AI_MASTER_KEY`
-  2. Zabbix Global Macro: `{$AI_MASTER_KEY}`
-  3. Secure Database Fallback (based on DB credentials).
+- **Master Key Configuration**: To ensure the security of your encrypted keys, it is highly recommended to configure a custom Master Key. The system prioritizes sources in this order:
+    1. **Environment Variable**: Set `ZBX_AI_MASTER_KEY` in your web server or PHP-FPM environment.
+    2. **Zabbix Global Macro**: Go to **Administration → General → Macros** and create a secret macro `{$AI_MASTER_KEY}`.
+    3. **Automatic Fallback**: If neither is set, a key derived from your Zabbix database credentials is used as a fallback.
 - **Permissions**: Menu and settings are strictly limited to Super Admins. Context JSON visibility is restricted to Super Admins only.
 
 ## Requirements
