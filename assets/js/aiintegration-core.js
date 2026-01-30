@@ -1,4 +1,4 @@
-window.AIIntegrationCore = (function() {
+window.AIIntegrationCore = (function () {
 	'use strict';
 
 	const CONFIG = {
@@ -10,26 +10,146 @@ window.AIIntegrationCore = (function() {
 	let settingsCache = null;
 	let settingsPromise = null;
 
+	function createLanguageSelect() {
+		const select = document.createElement('select');
+		select.className = 'aiintegration-lang-select';
+
+		const languages = [
+			{ val: 'en', label: 'English' },
+			{ val: 'pt-BR', label: 'Português (Brasil)' }
+		];
+
+		languages.forEach(lang => {
+			const opt = document.createElement('option');
+			opt.value = lang.val;
+			opt.textContent = lang.label;
+			if (lang.val === 'pt-BR') opt.selected = true; // Default to PT-BR as per recent user request
+			select.appendChild(opt);
+		});
+
+		return select;
+	}
+
 	function getCurrentTheme() {
 		const body = document.body;
-		if (body && body.classList.contains('theme-dark')) {
+		if (body && (body.classList.contains('theme-dark') || body.classList.contains('dark-theme'))) {
 			return 'dark';
 		}
 		const html = document.documentElement;
-		if (html && (html.getAttribute('data-theme') === 'dark-theme' || html.getAttribute('theme') === 'dark-theme')) {
+		const attrTheme = html.getAttribute('data-theme') || html.getAttribute('theme');
+		if (html && (attrTheme === 'dark-theme' || attrTheme === 'dark')) {
 			return 'dark';
 		}
 		return 'light';
 	}
 
-	function escapeHtml(text) {
-		const div = document.createElement('div');
-		div.textContent = text == null ? '' : String(text);
-		return div.innerHTML;
+	function copyToClipboard(text, btn) {
+		if (!navigator.clipboard) {
+			const textArea = document.createElement("textarea");
+			textArea.value = text;
+			document.body.appendChild(textArea);
+			textArea.select();
+			try {
+				document.execCommand('copy');
+				showCopySuccess(btn);
+			} catch (err) { }
+			document.body.removeChild(textArea);
+			return;
+		}
+		navigator.clipboard.writeText(text).then(() => {
+			showCopySuccess(btn);
+		});
 	}
 
-	function renderText(text) {
-		return escapeHtml(text).replace(/\n/g, '<br>');
+	function showCopySuccess(btn) {
+		if (!btn) return;
+		const originalText = btn.textContent;
+		btn.textContent = 'Copied!';
+		btn.classList.add('btn-success');
+		setTimeout(() => {
+			btn.textContent = originalText;
+			btn.classList.remove('btn-success');
+		}, 2000);
+	}
+
+	function renderMarkdown(text) {
+		if (!text) return '';
+
+		let html = text
+			// Escape basic HTML
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;');
+
+		// Fenced code blocks
+		html = html.replace(/```(?:[a-z]*)\n([\s\S]*?)\n```/g, '<pre><code>$1</code></pre>');
+
+		// Inline code
+		html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+		// Tables (simple implementation)
+		html = html.replace(/^\|(.+)\|$/gim, (match, content) => {
+			const cells = content.split('|').map(c => c.trim());
+			const tag = match.includes('---') ? 'th' : 'td';
+			return `<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`;
+		});
+		html = html.replace(/((?:<tr>.*<\/tr>\s*)+)/gms, '<table>$1</table>');
+		// Clean up rows that are just separators
+		html = html.replace(/<tr>\s*<td>-+\s*<\/td>\s*<td>-+\s*<\/td>.*?<\/tr>/gim, '');
+
+		// Headers
+		html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+		html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+		html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+		html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+		// Horizontal Rules
+		html = html.replace(/^---$/gim, '<hr>');
+
+		// Blockquotes (handle the escaped > which is now &gt;)
+		html = html.replace(/^&gt; (.*$)/gim, '<blockquote>$1</blockquote>');
+
+		// Bold and Italic
+		html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+		html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+		// Lists
+		html = html.replace(/^\s*[-*+] (.*$)/gim, '<li>$1</li>');
+		html = html.replace(/(<li>.*<\/li>)/gms, '<ul>$1</ul>');
+		html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+		// Better line breaks and paragraphs
+		const blockTags = ['h1', 'h2', 'h3', 'h4', 'pre', 'ul', 'li', 'table', 'blockquote', 'hr'];
+		const lines = html.split('\n');
+		let result = '';
+		let inPre = false;
+
+		lines.forEach(line => {
+			const trimmed = line.trim();
+			if (trimmed.includes('<pre>')) inPre = true;
+			if (trimmed.includes('</pre>')) {
+				inPre = false;
+				result += line + '\n';
+				return;
+			}
+
+			if (inPre) {
+				result += line + '\n';
+				return;
+			}
+
+			const isBlock = blockTags.some(tag => trimmed.startsWith('<' + tag));
+
+			if (trimmed === '') {
+				result += '<br>';
+			} else if (isBlock) {
+				result += line + '\n';
+			} else {
+				result += '<p>' + line + '</p>';
+			}
+		});
+
+		return result;
 	}
 
 	function tryParseJSON(text) {
@@ -249,8 +369,14 @@ window.AIIntegrationCore = (function() {
 	return {
 		CONFIG,
 		getCurrentTheme,
-		escapeHtml,
-		renderText,
+		escapeHtml: (text) => {
+			const div = document.createElement('div');
+			div.textContent = text == null ? '' : String(text);
+			return div.innerHTML;
+		},
+		renderMarkdown,
+		copyToClipboard,
+		createLanguageSelect,
 		tryParseJSON,
 		loadSettings,
 		callAI,

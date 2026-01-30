@@ -15,10 +15,18 @@ class AIIntegrationSettings extends CController {
 	}
 
 	public function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_SUPER_ADMIN;
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
 	}
 
 	protected function doAction(): void {
-		$this->setResponse(new CControllerResponseData([]));
+		$config = \Modules\AIIntegration\Classes\ConfigManager::load();
+		$is_super_admin = $this->getUserType() == USER_TYPE_SUPER_ADMIN;
+
+		$data = [
+			'config' => $config,
+			'is_super_admin' => $is_super_admin
+		];
+
+		$this->setResponse(new CControllerResponseData($data));
 	}
 }

@@ -1,4 +1,4 @@
-(function() {
+(function () {
 	'use strict';
 
 	function waitForCore(callback) {
@@ -564,12 +564,18 @@
 		const defaultProvider = settings.default_provider || 'openai';
 
 		const providerSelect = createProviderSelect(providers, defaultProvider);
+		const langSelect = core.createLanguageSelect();
+
+		const headerWrapper = document.createElement('div');
+		headerWrapper.appendChild(providerSelect);
+		headerWrapper.appendChild(langSelect);
+
 		const container = document.createElement('div');
 		container.innerHTML = '<div class="aiintegration-loading-context"><p>Loading...</p></div>';
 
 		const modal = core.openModal('AI Problem Analysis', container, [
 			{ label: 'Close', className: 'btn-alt', onClick: (close) => close() }
-		], { headerExtra: providerSelect });
+		], { headerExtra: headerWrapper });
 
 		loadFullContext(basicData).then((enrichedContext) => {
 			container.innerHTML = '';
@@ -637,11 +643,27 @@
 							}
 						}
 
-						resultBox.innerHTML = '<div class="aiintegration-response">Analyzing...</div>';
+						resultBox.innerHTML = '<div class="aiintegration-response"><div class="aiintegration-loading-context">Analyzing...</div></div>';
 
-						core.callAI(questionInput.value.trim(), context, providerSelect.value)
+						let finalQuestion = questionInput.value.trim();
+						if (langSelect.value === 'pt-BR') {
+							finalQuestion += '\n\nIMPORTANT: Please provide the entire response in Portuguese (Brazil). Maintain all technical Zabbix terms if appropriate, but explain them in Portuguese.';
+						}
+
+						core.callAI(finalQuestion, context, providerSelect.value)
 							.then((data) => {
-								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderText(data.response || '')}</div>`;
+								const responseText = data.response || '';
+								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderMarkdown(responseText)}</div>`;
+
+								// Update actions to include Copy
+								modal.setActions([
+									{
+										label: 'Copy Result',
+										className: 'btn-alt',
+										onClick: (close, btn) => core.copyToClipboard(responseText, btn)
+									},
+									{ label: 'Close', className: 'btn-alt', onClick: (c) => c() }
+								]);
 							})
 							.catch((error) => {
 								resultBox.innerHTML = `<div class="aiintegration-error">${core.escapeHtml(error.message || 'Error')}</div>`;

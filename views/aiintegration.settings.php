@@ -1,17 +1,12 @@
 <?php
 
-$config_path = __DIR__ . '/../config/aiintegration_config.json';
-$config = file_exists($config_path) ? json_decode(file_get_contents($config_path), true) : [];
+$config = $data['config'];
+$is_super_admin = $data['is_super_admin'];
 
 $providers = $config['providers'] ?? [];
 $default_provider = $config['default_provider'] ?? 'openai';
 
-$quick_actions = array_merge([
-	'problems' => true,
-	'triggers' => true,
-	'items' => true,
-	'hosts' => true
-], $config['quick_actions'] ?? []);
+$quick_actions = $config['quick_actions'] ?? [];
 
 $openai = $providers['openai'] ?? [];
 $anthropic = $providers['anthropic'] ?? [];
@@ -49,10 +44,10 @@ $default_provider_select = (new CSelect('default_provider'))
 	->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH);
 
 $qa_container = (new CDiv([
-	(new CCheckBox('qa_problems'))->setLabel(_('Problems'))->setChecked(!empty($quick_actions['problems'])),
-	(new CCheckBox('qa_triggers'))->setLabel(_('Triggers'))->setChecked(!empty($quick_actions['triggers'])),
-	(new CCheckBox('qa_items'))->setLabel(_('Latest data'))->setChecked(!empty($quick_actions['items'])),
-	(new CCheckBox('qa_hosts'))->setLabel(_('Hosts'))->setChecked(!empty($quick_actions['hosts']))
+	(new CCheckBox('qa_problems'))->setLabel(_('Problems'))->setChecked(!empty($quick_actions['problems']))->setEnabled($is_super_admin),
+	(new CCheckBox('qa_triggers'))->setLabel(_('Triggers'))->setChecked(!empty($quick_actions['triggers']))->setEnabled($is_super_admin),
+	(new CCheckBox('qa_items'))->setLabel(_('Latest data'))->setChecked(!empty($quick_actions['items']))->setEnabled($is_super_admin),
+	(new CCheckBox('qa_hosts'))->setLabel(_('Hosts'))->setChecked(!empty($quick_actions['hosts']))->setEnabled($is_super_admin)
 ]))->addClass('aiintegration-qa-options');
 
 $general_grid = (new CFormGrid())
@@ -65,13 +60,23 @@ $general_grid = (new CFormGrid())
 		new CFormField($qa_container)
 	])
 	->addItem([
-		new CLabel(_('Config file'), 'aiintegration-config-path'),
+		new CLabel(_('Storage'), 'aiintegration-storage-info'),
 		new CFormField(
-			(new CSpan($config_path))
+			(new CSpan(_('Zabbix Profiles (Database)')))
 				->addClass('aiintegration-note')
-				->setAttribute('id', 'aiintegration-config-path')
+				->setAttribute('id', 'aiintegration-storage-info')
 		)
 	]);
+
+if (!$is_super_admin) {
+	$general_grid->addItem([
+		new CLabel(''),
+		new CFormField(
+			(new CDiv(_('As a regular user, you can only configure your personal API keys and default provider.')))
+				->addClass(ZBX_STYLE_MSG_DETAILS)
+		)
+	]);
+}
 
 $openai_grid = (new CFormGrid())
 	->addItem([
@@ -84,6 +89,7 @@ $openai_grid = (new CFormGrid())
 			(new CTextBox('openai_endpoint', $openai['endpoint'] ?? 'https://api.openai.com/v1/chat/completions'))
 				->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 				->setId('openai_endpoint')
+				->setEnabled($is_super_admin)
 		)
 	])
 	->addItem([
@@ -118,6 +124,7 @@ $openai_grid = (new CFormGrid())
 			(new CTextBox('openai_max_tokens', (string) ($openai['max_tokens'] ?? 2048)))
 				->setWidth(ZBX_TEXTAREA_SMALL_WIDTH)
 				->setId('openai_max_tokens')
+				->setEnabled($is_super_admin)
 		)
 	]);
 
@@ -132,6 +139,7 @@ $anthropic_grid = (new CFormGrid())
 			(new CTextBox('anthropic_endpoint', $anthropic['endpoint'] ?? 'https://api.anthropic.com/v1/messages'))
 				->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 				->setId('anthropic_endpoint')
+				->setEnabled($is_super_admin)
 		)
 	])
 	->addItem([
@@ -158,6 +166,7 @@ $anthropic_grid = (new CFormGrid())
 			(new CTextBox('anthropic_temperature', (string) ($anthropic['temperature'] ?? 0.7)))
 				->setWidth(ZBX_TEXTAREA_SMALL_WIDTH)
 				->setId('anthropic_temperature')
+				->setEnabled($is_super_admin)
 		)
 	])
 	->addItem([
@@ -166,6 +175,7 @@ $anthropic_grid = (new CFormGrid())
 			(new CTextBox('anthropic_max_tokens', (string) ($anthropic['max_tokens'] ?? 2048)))
 				->setWidth(ZBX_TEXTAREA_SMALL_WIDTH)
 				->setId('anthropic_max_tokens')
+				->setEnabled($is_super_admin)
 		)
 	]);
 
@@ -180,6 +190,7 @@ $gemini_grid = (new CFormGrid())
 			(new CTextBox('gemini_endpoint', $gemini['endpoint'] ?? 'https://generativelanguage.googleapis.com/v1beta/models'))
 				->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 				->setId('gemini_endpoint')
+				->setEnabled($is_super_admin)
 		)
 	])
 	->addItem([
@@ -214,6 +225,7 @@ $gemini_grid = (new CFormGrid())
 			(new CTextBox('gemini_max_tokens', (string) ($gemini['max_tokens'] ?? 2048)))
 				->setWidth(ZBX_TEXTAREA_SMALL_WIDTH)
 				->setId('gemini_max_tokens')
+				->setEnabled($is_super_admin)
 		)
 	]);
 
@@ -262,6 +274,7 @@ $custom_grid = (new CFormGrid())
 			(new CTextBox('custom_max_tokens', (string) ($custom['max_tokens'] ?? 2048)))
 				->setWidth(ZBX_TEXTAREA_SMALL_WIDTH)
 				->setId('custom_max_tokens')
+				->setEnabled($is_super_admin)
 		)
 	])
 	->addItem([

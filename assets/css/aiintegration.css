@@ -6,37 +6,64 @@
 }
 
 .aiintegration-note {
-	color: #6b6b6b;
+	color: #768d99;
 	font-size: 12px;
 }
 
 .aiintegration-modal-overlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.55);
+	background: rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(4px);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	z-index: 10000;
+	animation: ai-fade-in 0.2s ease-out;
+}
+
+@keyframes ai-fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
 }
 
 .aiintegration-modal {
 	background: #ffffff;
-	color: #1f1f1f;
-	border-radius: 4px;
-	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-	max-width: 840px;
-	width: 92%;
-	max-height: 90vh;
+	color: #1f2c33;
+	border-radius: 8px;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.05);
+	max-width: 900px;
+	width: 94%;
+	max-height: 85vh;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
+	border: 1px solid #d6dde1;
+	transform: translateY(0);
+	animation: ai-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.aiintegration-modal-header,
-.aiintegration-modal-footer {
-	padding: 12px 16px;
-	border-bottom: 1px solid #e1e1e1;
+@keyframes ai-slide-up {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.aiintegration-modal-header {
+	padding: 16px 20px;
+	background: #f3f5f6;
+	border-bottom: 1px solid #d6dde1;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -44,26 +71,32 @@
 }
 
 .aiintegration-modal-footer {
-	border-bottom: none;
-	border-top: 1px solid #e1e1e1;
+	padding: 12px 20px;
+	background: #f3f5f6;
+	border-top: 1px solid #d6dde1;
+	display: flex;
+	align-items: center;
 	justify-content: space-between;
 }
 
 .aiintegration-modal-credits {
 	font-size: 11px;
-	color: #999;
-	opacity: 0.75;
+	color: #768d99;
+	font-weight: 500;
 }
 
 .aiintegration-modal-footer-actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 10px;
 }
 
 .aiintegration-modal-title {
-	font-size: 16px;
-	font-weight: 600;
+	font-size: 15px;
+	font-weight: 700;
+	color: #1f2c33;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
 }
 
 .aiintegration-modal-header-extra {
@@ -72,26 +105,45 @@
 	justify-content: flex-end;
 	align-items: center;
 	gap: 8px;
-	margin-right: 8px;
 }
 
 .aiintegration-modal-header-extra select {
 	font-size: 12px;
 	padding: 4px 8px;
-	max-width: 200px;
+	max-width: 180px;
+	border-radius: 4px;
+	border: 1px solid #d6dde1;
+}
+
+.aiintegration-lang-select {
+	margin-left: 8px;
 }
 
 .aiintegration-modal-body {
-	padding: 16px;
+	padding: 24px;
 	overflow: auto;
+	line-height: 1.6;
+	font-size: 14px;
 }
 
 .aiintegration-modal-close {
 	background: none;
 	border: none;
-	font-size: 18px;
+	font-size: 24px;
 	cursor: pointer;
-	line-height: 1;
+	color: #768d99;
+	transition: color 0.15s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 4px;
+}
+
+.aiintegration-modal-close:hover {
+	color: #1f2c33;
+	background: rgba(0, 0, 0, 0.05);
 }
 
 .aiintegration-field {
@@ -114,35 +166,148 @@
 .aiintegration-summary-table {
 	width: 100%;
 	border-collapse: collapse;
-	margin-bottom: 12px;
+	margin-bottom: 24px;
+	background: #f9fafb;
+	border-radius: 6px;
+	border: 1px solid #eef0f2;
 }
 
 .aiintegration-summary-table td {
-	padding: 6px 8px;
-	border-bottom: 1px solid #e1e1e1;
+	padding: 10px 14px;
+	border-bottom: 1px solid #eef0f2;
 	vertical-align: top;
+}
+
+.aiintegration-summary-table tr:last-child td {
+	border-bottom: none;
 }
 
 .aiintegration-summary-table td:first-child {
 	font-weight: 600;
-	width: 140px;
+	width: 160px;
+	color: #4f5b66;
+	background: #f3f5f6;
 }
 
 .aiintegration-response {
-	background: #f5f5f5;
-	border: 1px solid #e1e1e1;
-	padding: 10px 12px;
-	border-radius: 3px;
-	white-space: pre-wrap;
+	background: #ffffff;
+	padding: 0;
+	border-radius: 0;
+}
+
+/* Markdown Styling */
+.aiintegration-response h1,
+.aiintegration-response h2,
+.aiintegration-response h3,
+.aiintegration-response h4 {
+	margin: 24px 0 12px;
+	font-weight: 700;
+	color: #1f2c33;
+	line-height: 1.3;
+}
+
+.aiintegration-response h1 {
+	font-size: 22px;
+	border-bottom: 2px solid #eef0f2;
+	padding-bottom: 8px;
+}
+
+.aiintegration-response h2 {
+	font-size: 18px;
+	border-bottom: 1px solid #eef0f2;
+	padding-bottom: 6px;
+}
+
+.aiintegration-response h3 {
+	font-size: 16px;
+}
+
+.aiintegration-response h4 {
+	font-size: 14px;
+	text-transform: uppercase;
+	color: #4f5b66;
+}
+
+.aiintegration-response hr {
+	border: none;
+	border-top: 1px solid #eef0f2;
+	margin: 24px 0;
+}
+
+.aiintegration-response blockquote {
+	margin: 16px 0;
+	padding: 8px 16px;
+	border-left: 4px solid #a855f7;
+	background: #f8f0ff;
+	color: #63439c;
+	font-style: italic;
+	border-radius: 0 4px 4px 0;
+}
+
+.aiintegration-response table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 16px 0;
+	font-size: 13px;
+}
+
+.aiintegration-response th,
+.aiintegration-response td {
+	padding: 8px 12px;
+	border: 1px solid #eef0f2;
+	text-align: left;
+}
+
+.aiintegration-response th {
+	background: #f3f5f6;
+	font-weight: 700;
+}
+
+.aiintegration-response p {
+	margin-bottom: 12px;
+}
+
+.aiintegration-response ul {
+	margin: 0 0 16px 20px;
+}
+
+.aiintegration-response li {
+	margin-bottom: 6px;
+}
+
+.aiintegration-response code {
+	background: #f0f2f4;
+	padding: 2px 5px;
+	border-radius: 4px;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+	font-size: 0.9em;
+	color: #d63384;
+}
+
+.aiintegration-response pre {
+	background: #1e1e1e;
+	color: #d4d4d4;
+	padding: 16px;
+	border-radius: 6px;
+	overflow: auto;
+	margin: 16px 0;
+}
+
+.aiintegration-response pre code {
+	background: none;
+	padding: 0;
+	color: inherit;
+	font-size: 13px;
 }
 
 .aiintegration-error {
 	color: #b42318;
-	background: #ffeaea;
-	border: 1px solid #f5c2c2;
-	padding: 8px 10px;
-	border-radius: 3px;
-	margin-bottom: 12px;
+	background: #fef3f2;
+	border: 1px solid #fee4e2;
+	padding: 12px 16px;
+	border-radius: 6px;
+	margin-bottom: 20px;
+	font-weight: 500;
 }
 
 .aiintegration-btn {
@@ -151,15 +316,18 @@
 	gap: 6px;
 }
 
+/* Dark Theme Support */
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-modal {
-	background: #1f1f1f;
-	color: #e1e1e1;
-	border-color: #2f2f2f;
+	background: #2b2b2b;
+	color: #f0f2f4;
+	border-color: #444;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-modal-header,
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-modal-footer {
-	border-color: #2f2f2f;
+	background: #383838;
+	border-color: #444;
 }
 
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-modal-credits {
@@ -167,11 +335,57 @@
 	opacity: 0.7;
 }
 
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-modal-title {
+	color: #f0f2f4;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-summary-table {
+	background: #333;
+	border-color: #444;
+}
+
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-summary-table td {
-	border-color: #2f2f2f;
+	border-color: #444;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-summary-table td:first-child {
+	background: #3d3d3d;
+	color: #abb3bb;
 }
 
 .aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response {
 	background: #2b2b2b;
 	border-color: #3a3a3a;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response h1,
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response h2,
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response h3,
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response h4 {
+	color: #f0f2f4;
+	border-color: #444;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response hr {
+	border-color: #444;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response blockquote {
+	background: #251b30;
+	color: #c9a9eb;
+	border-color: #a855f7;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response th,
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response td {
+	border-color: #444;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response th {
+	background: #3d3d3d;
+}
+
+.aiintegration-modal-overlay[theme="dark-theme"] .aiintegration-response code {
+	background: #444;
+	color: #ff79c6;
 }

@@ -1,4 +1,4 @@
-(function() {
+(function () {
 	'use strict';
 
 	let observersStarted = false;
@@ -436,7 +436,7 @@
 			const trendAvgs = trends.map(t => parseFloat(t.value_avg)).filter(v => !isNaN(v));
 			if (trendAvgs.length >= 2) {
 				const trendChange = trendAvgs[0] - trendAvgs[trendAvgs.length - 1];
-				const trendPercent = trendAvgs[trendAvgs.length - 1] !== 0 
+				const trendPercent = trendAvgs[trendAvgs.length - 1] !== 0
 					? (trendChange / Math.abs(trendAvgs[trendAvgs.length - 1])) * 100 : 0;
 
 				if (Math.abs(trendPercent) > 30) {
@@ -536,12 +536,18 @@
 		const defaultProvider = settings.default_provider || 'openai';
 
 		const providerSelect = createProviderSelect(providers, defaultProvider);
+		const langSelect = core.createLanguageSelect();
+
+		const headerWrapper = document.createElement('div');
+		headerWrapper.appendChild(providerSelect);
+		headerWrapper.appendChild(langSelect);
+
 		const container = document.createElement('div');
 		container.innerHTML = '<div class="aiintegration-loading-context"><p>Loading item analysis...</p></div>';
 
 		const modal = core.openModal('AI Data Analysis', container, [
 			{ label: 'Close', className: 'btn-alt', onClick: (close) => close() }
-		], { headerExtra: providerSelect });
+		], { headerExtra: headerWrapper });
 
 		loadItemAnalysisContext(basicData.itemid).then((context) => {
 			container.innerHTML = '';
@@ -625,11 +631,26 @@
 							}
 						}
 
-						resultBox.innerHTML = '<div class="aiintegration-response">Analyzing...</div>';
+						resultBox.innerHTML = '<div class="aiintegration-response"><div class="aiintegration-loading-context">Analyzing...</div></div>';
 
-						core.callAI(questionInput.value.trim(), ctx, providerSelect.value)
+						let finalQuestion = questionInput.value.trim();
+						if (langSelect.value === 'pt-BR') {
+							finalQuestion += '\n\nIMPORTANT: Please provide the entire response in Portuguese (Brazil). Maintain all technical Zabbix terms if appropriate, but explain them in Portuguese.';
+						}
+
+						core.callAI(finalQuestion, ctx, providerSelect.value)
 							.then((data) => {
-								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderText(data.response || '')}</div>`;
+								const responseText = data.response || '';
+								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderMarkdown(responseText)}</div>`;
+
+								modal.setActions([
+									{
+										label: 'Copy Result',
+										className: 'btn-alt',
+										onClick: (close, btn) => core.copyToClipboard(responseText, btn)
+									},
+									{ label: 'Close', className: 'btn-alt', onClick: (c) => c() }
+								]);
 							})
 							.catch((error) => {
 								resultBox.innerHTML = `<div class="aiintegration-error">${core.escapeHtml(error.message || 'Error')}</div>`;

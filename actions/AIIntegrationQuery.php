@@ -82,20 +82,7 @@ class AIIntegrationQuery extends CController {
 	}
 
 	private function loadConfig(): array {
-		$config_path = $this->resolveConfigPath();
-
-		if (!file_exists($config_path)) {
-			return ['providers' => []];
-		}
-
-		$content = file_get_contents($config_path);
-		$config = json_decode($content, true);
-
-		return is_array($config) ? $config : ['providers' => []];
-	}
-
-	private function resolveConfigPath(): string {
-		return __DIR__ . '/../config/aiintegration_config.json';
+		return \Modules\AIIntegration\Classes\ConfigManager::load();
 	}
 
 	private function callProvider(string $provider, array $config, string $question, array $context): string {

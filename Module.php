@@ -9,7 +9,7 @@ use Zabbix\Core\CModule,
 
 class Module extends CModule {
 	public function init(): void {
-		if (CWebUser::getType() >= USER_TYPE_SUPER_ADMIN) {
+		if (CWebUser::getType() >= USER_TYPE_ZABBIX_USER) {
 			APP::Component()->get('menu.main')
 				->findOrAdd(_('Administration'))
 				->getSubmenu()
