@@ -1,4 +1,4 @@
-(function() {
+(function () {
 	'use strict';
 
 	function waitForCore(callback) {
@@ -167,6 +167,11 @@
 		const resultBox = document.createElement('div');
 		container.appendChild(resultBox);
 
+		const langSelect = core.createLanguageSelect();
+		const headerWrapper = document.createElement('div');
+		headerWrapper.appendChild(providerSelect);
+		headerWrapper.appendChild(langSelect);
+
 		const modal = core.openModal(options.title, container, [
 			{
 				label: 'Generate',
@@ -189,14 +194,19 @@
 						}
 					}
 
-					const question = options.buildQuestion(userRequest);
-					resultBox.innerHTML = '<div class="aiintegration-response">Generating...</div>';
+					let question = options.buildQuestion(userRequest);
+					if (langSelect.value === 'pt-BR') {
+						question += '\n\nIMPORTANT: Please provide the response in Portuguese (Brazil).';
+					}
+
+					resultBox.innerHTML = '<div class="aiintegration-response"><div class="aiintegration-loading-context">Generating...</div></div>';
 
 					core.callAI(question, parsedContext, providerSelect.value)
 						.then((data) => {
-							const parsed = core.tryParseJSON(data.response || '');
+							const responseText = data.response || '';
+							const parsed = core.tryParseJSON(responseText);
 							if (!parsed) {
-								resultBox.innerHTML = `<div class="aiintegration-error">Could not parse response.</div><div class="aiintegration-response">${core.renderText(data.response || '')}</div>`;
+								resultBox.innerHTML = `<div class="aiintegration-error">Could not parse response.</div><div class="aiintegration-response">${core.renderMarkdown(responseText)}</div>`;
 								return;
 							}
 
@@ -212,6 +222,11 @@
 										options.applyResult(parsed);
 										close();
 									}
+								},
+								{
+									label: 'Copy Result',
+									className: 'btn-alt',
+									onClick: (close, btn) => core.copyToClipboard(responseText, btn)
 								},
 								{
 									label: 'Close',
@@ -230,7 +245,7 @@
 				className: 'btn-alt',
 				onClick: (close) => close()
 			}
-		], { headerExtra: providerSelect });
+		], { headerExtra: headerWrapper });
 
 		core.loadSettings().then((settings) => {
 			const providers = settings.providers || [];
@@ -320,9 +335,9 @@ Return ONLY valid JSON:
 
 ${hostHint}User request: "${request}"`;
 						},
-					renderPreview: (data, helper) => {
-						const wrapper = document.createElement('div');
-						wrapper.innerHTML = `
+						renderPreview: (data, helper) => {
+							const wrapper = document.createElement('div');
+							wrapper.innerHTML = `
 							<table class="aiintegration-summary-table">
 								<tr><td>Name</td><td>${helper.escapeHtml(data.name || '')}</td></tr>
 								<tr><td>Expression</td><td>${helper.escapeHtml(data.expression || '')}</td></tr>
@@ -331,40 +346,40 @@ ${hostHint}User request: "${request}"`;
 								${data.recovery_expression ? `<tr><td>Recovery</td><td>${helper.escapeHtml(data.recovery_expression)}</td></tr>` : ''}
 							</table>
 						`;
-						return wrapper;
-					},
-					applyResult: (data) => {
-						const nameField = dialogueNode.querySelector('input[name="name"]') || dialogueNode.querySelector('#name');
-						const exprField = dialogueNode.querySelector('textarea[name="expression"]') || dialogueNode.querySelector('#expression');
-						const descField = dialogueNode.querySelector('textarea[name="description"]')
-							|| dialogueNode.querySelector('textarea[name="comments"]')
-							|| dialogueNode.querySelector('#description');
-						const recoveryField = dialogueNode.querySelector('textarea[name="recovery_expression"]')
-							|| dialogueNode.querySelector('#recovery_expression');
+							return wrapper;
+						},
+						applyResult: (data) => {
+							const nameField = dialogueNode.querySelector('input[name="name"]') || dialogueNode.querySelector('#name');
+							const exprField = dialogueNode.querySelector('textarea[name="expression"]') || dialogueNode.querySelector('#expression');
+							const descField = dialogueNode.querySelector('textarea[name="description"]')
+								|| dialogueNode.querySelector('textarea[name="comments"]')
+								|| dialogueNode.querySelector('#description');
+							const recoveryField = dialogueNode.querySelector('textarea[name="recovery_expression"]')
+								|| dialogueNode.querySelector('#recovery_expression');
 
-						const normalizedExpression = normalizeTriggerExpression(data.expression, hostName, hostId);
-						const normalizedRecovery = data.recovery_expression
-							? normalizeTriggerExpression(data.recovery_expression, hostName, hostId)
-							: '';
+							const normalizedExpression = normalizeTriggerExpression(data.expression, hostName, hostId);
+							const normalizedRecovery = data.recovery_expression
+								? normalizeTriggerExpression(data.recovery_expression, hostName, hostId)
+								: '';
 
-						fillField(nameField, data.name);
-						fillField(exprField, normalizedExpression);
-						fillField(descField, data.description);
-						if (normalizedRecovery) {
-							fillField(recoveryField, normalizedRecovery);
+							fillField(nameField, data.name);
+							fillField(exprField, normalizedExpression);
+							fillField(descField, data.description);
+							if (normalizedRecovery) {
+								fillField(recoveryField, normalizedRecovery);
+							}
+
+							if (data.severity !== undefined) {
+								const severityRadios = dialogueNode.querySelectorAll('input[name="priority"]');
+								severityRadios.forEach((radio) => {
+									if (String(radio.value) === String(data.severity)) {
+										radio.checked = true;
+										radio.dispatchEvent(new Event('change', { bubbles: true }));
+									}
+								});
+							}
 						}
-
-						if (data.severity !== undefined) {
-							const severityRadios = dialogueNode.querySelectorAll('input[name="priority"]');
-							severityRadios.forEach((radio) => {
-								if (String(radio.value) === String(data.severity)) {
-									radio.checked = true;
-									radio.dispatchEvent(new Event('change', { bubbles: true }));
-								}
-							});
-						}
-					}
-				});
+					});
 				});
 			});
 
@@ -687,12 +702,17 @@ ${hostHint}User request: "${request}"`;
 		const defaultProvider = settings.default_provider || 'openai';
 
 		const providerSelect = createProviderSelect(providers, defaultProvider);
+		const langSelect = core.createLanguageSelect();
+		const headerWrapper = document.createElement('div');
+		headerWrapper.appendChild(providerSelect);
+		headerWrapper.appendChild(langSelect);
+
 		const container = document.createElement('div');
 		container.innerHTML = '<div class="aiintegration-loading-context"><p>Loading...</p></div>';
 
 		const modal = core.openModal('AI Host Analysis', container, [
 			{ label: 'Close', className: 'btn-alt', onClick: (close) => close() }
-		], { headerExtra: providerSelect });
+		], { headerExtra: headerWrapper });
 
 		loadHostAnalysisContext(hostid).then((context) => {
 			container.innerHTML = '';
@@ -770,11 +790,26 @@ ${hostHint}User request: "${request}"`;
 							}
 						}
 
-						resultBox.innerHTML = '<div class="aiintegration-response">Analyzing...</div>';
+						resultBox.innerHTML = '<div class="aiintegration-response"><div class="aiintegration-loading-context">Analyzing...</div></div>';
 
-						core.callAI(questionInput.value.trim(), ctx, providerSelect.value)
+						let finalQuestion = questionInput.value.trim();
+						if (langSelect.value === 'pt-BR') {
+							finalQuestion += '\n\nIMPORTANT: Please provide the entire response in Portuguese (Brazil).';
+						}
+
+						core.callAI(finalQuestion, ctx, providerSelect.value)
 							.then((data) => {
-								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderText(data.response || '')}</div>`;
+								const responseText = data.response || '';
+								resultBox.innerHTML = `<div class="aiintegration-response">${core.renderMarkdown(responseText)}</div>`;
+
+								modal.setActions([
+									{
+										label: 'Copy Result',
+										className: 'btn-alt',
+										onClick: (close, btn) => core.copyToClipboard(responseText, btn)
+									},
+									{ label: 'Close', className: 'btn-alt', onClick: (c) => c() }
+								]);
 							})
 							.catch((error) => {
 								resultBox.innerHTML = `<div class="aiintegration-error">${core.escapeHtml(error.message || 'Error')}</div>`;
